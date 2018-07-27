@@ -1,4 +1,6 @@
 # pymetasys
+Pymetasys is a Python library that exposes basic functionality of the Metasys Companion building control system.
+
 Metasys Companion is a legacy building control system from Johnson Controls. My church's building is about 30 years old, and they use this system to manage the HVAC and electrical systems. The only interface to Metasys is a VT100 terminal via an RS-232 serial connection. Obviously, this is not conducive to mobile management.
 
 ## Why write a Python library for Metasys?
