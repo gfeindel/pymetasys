@@ -13,7 +13,14 @@ pymetasis should be able to:
   2. Provide basic reporting of system status,
   3. Through a simple, mobile-friendly web interface and RESTful API.
   
-## Library Design
+## Design
+
+Each action can be represented as:
+  1. The sequence of characters used to reach that screen.
+  2. The pattern that matches the desired field.
+  3. The value for the field.
+
+  Rather than trying to maintain the state of the serial console, pymetasys begins each operation from the main screen. This slows the process down, but it simplifies the logic dramatically.
 
 pymetasys consists of several logical components.
   1. The serial interface ([pyserial](https://github.com/pyserial)) reads and writes bytes from the RS-232 serial connection to Metasys.
@@ -23,6 +30,7 @@ pymetasys consists of several logical components.
 I can think of a few design challenges:
   1. The serial interface can be a bit laggy, and some of the Metasys control screens refresh every few seconds. How do I make sure the screen scraping buffer is accurate?
   2. The Metasys UI signs the operator out after a period of inactivity. How can I avoid "signing in" to the Metasys for every command? This will dramatically slow down the API performance.
-  3. Since the serial interface supports only one operator at a time, how do I gracefully ensure only one connection at a time?
+  3. Since the serial interface supports only one operator at a time, how do I gracefully ensure only one connection at a time? Use some kind of interprocess communication (IPC), so that web processes communicate with a singleton control process that accesses the serial port.
+  4. How do I authenticate and authorize users to protect against malicious actions?
   
   More to come as I make progress on this project!
