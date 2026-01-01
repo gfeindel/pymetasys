@@ -20,14 +20,15 @@ class SerialClient:
             return
         self._serial = serial.Serial(
             port=self.settings.serial_port,
-            baudrate=getattr(self.settings, "serial_baudrate", 9600),
+            baudrate=self.settings.serial_baudrate,
             timeout=self.settings.serial_timeout,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
-            xonxoff=getattr(self.settings, "serial_xonxoff", False),
-            rtscts=getattr(self.settings, "serial_rtscts", False),
-            write_timeout=getattr(self.settings, "serial_write_timeout", None),
+            xonxoff=self.settings.serial_xonxoff,
+            rtscts=self.settings.serial_rtscts,
+            write_timeout=self.settings.serial_write_timeout,
+            exclusive=False,
         )
 
     def _perform_login(self, timeout: float | None = None) -> None:

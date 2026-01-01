@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     serial_xonxoff: bool = Field(False, alias="SERIAL_XONXOFF")
     serial_rtscts: bool = Field(False, alias="SERIAL_RTSCTS")
     serial_write_timeout: float | None = Field(None, alias="SERIAL_WRITE_TIMEOUT")
+    serial_exclusive: bool = Field(False, alias="SERIAL_EXCLUSIVE")
 
     admin_bootstrap_email: str | None = Field(None, alias="ADMIN_EMAIL")
     admin_bootstrap_password: str | None = Field(None, alias="ADMIN_PASSWORD")
