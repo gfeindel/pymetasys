@@ -12,7 +12,7 @@ FastAPI + React app that serializes ASCII-terminal commands to a legacy building
 Copy `.env.example` to `.env` and adjust:
 - `DATABASE_URL` (defaults to SQLite file)
 -, optional `REDIS_URL` (not required for the in-process queue)
-- Serial: `SERIAL_PORT`, `SERIAL_BAUDRATE`, `SERIAL_TIMEOUT`
+ - Serial: `SERIAL_PORT`, `SERIAL_BAUDRATE`, `SERIAL_TIMEOUT`, `SERIAL_PASSWORD`, `SERIAL_XONXOFF`, `SERIAL_RTSCTS`, `SERIAL_WRITE_TIMEOUT`
 - Auth: `JWT_SECRET`, `ACCESS_TOKEN_EXPIRE_MINUTES`
 - Admin bootstrap: `ADMIN_EMAIL`, `ADMIN_PASSWORD`
 
@@ -49,5 +49,7 @@ pytest
 Tests mock the serial client and cover auth, regex testing, and job execution.
 
 ## Serial notes
-- Special keys can be encoded literally (e.g., `\n`, `<TAB>`, `<ESC>`); the sequence is sent as raw ASCII with replacement for unsupported bytes.
+- Default serial parameters are 9600 baud, 8N1; adjust via the `SERIAL_*` env vars above.
+- Special keys can be encoded literally (e.g., `\n`, `<TAB>`, `<ESC>`); sequences are sent as raw bytes using `latin1` (1:1 byte mapping) so VT102/ANSI escape codes are preserved.
+- Flow control can be enabled with `SERIAL_XONXOFF` (software) or `SERIAL_RTSCTS` (hardware). `SERIAL_WRITE_TIMEOUT` controls per-write timeouts.
 - The serial client retries once on connection errors and marks jobs as `timeout` if the device is silent beyond `SERIAL_TIMEOUT`.

@@ -20,8 +20,14 @@ class SerialClient:
             return
         self._serial = serial.Serial(
             port=self.settings.serial_port,
-            baudrate=self.settings.serial_baudrate,
+            baudrate=getattr(self.settings, "serial_baudrate", 9600),
             timeout=self.settings.serial_timeout,
+            bytesize=serial.EIGHTBITS,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            xonxoff=getattr(self.settings, "serial_xonxoff", False),
+            rtscts=getattr(self.settings, "serial_rtscts", False),
+            write_timeout=getattr(self.settings, "serial_write_timeout", None),
         )
 
     def _perform_login(self, timeout: float | None = None) -> None:
@@ -51,7 +57,8 @@ class SerialClient:
         ser = self._serial
         ser.reset_input_buffer()
         ser.reset_output_buffer()
-        ser.write(input_sequence.encode("ascii", errors="replace"))
+        # use latin1 to preserve raw VT102/ANSI byte values 1:1
+        ser.write(input_sequence.encode("latin1"))
         ser.flush()
 
         ser.timeout = timeout
@@ -69,7 +76,7 @@ class SerialClient:
                 raise TimeoutError("Serial read timed out")
             if (now - last_data_time) >= quiet_gap and (now - start) > 0.05:
                 break
-        return b"".join(chunks).decode("ascii", errors="replace")
+        return b"".join(chunks).decode("latin1", errors="replace")
 
     def execute_sequence(self, input_sequence: str, timeout: float | None = None) -> str:
         """
