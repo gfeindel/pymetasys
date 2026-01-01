@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     serial_port: str = Field("COM1", alias="SERIAL_PORT")
     serial_baudrate: int = Field(9600, alias="SERIAL_BAUDRATE")
     serial_timeout: float = Field(3.0, alias="SERIAL_TIMEOUT")
+    serial_password: str = Field("0000", alias="SERIAL_PASSWORD")
 
     admin_bootstrap_email: str | None = Field(None, alias="ADMIN_EMAIL")
     admin_bootstrap_password: str | None = Field(None, alias="ADMIN_PASSWORD")

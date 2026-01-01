@@ -24,6 +24,20 @@ class SerialClient:
             timeout=self.settings.serial_timeout,
         )
 
+    def _perform_login(self, timeout: float | None = None) -> None:
+        """
+        Send the login preamble (ENTER + 4-digit password) and
+        verify that the device responds with 'Main Menu'. Raises RuntimeError
+        if login fails.
+        """
+        timeout = timeout or self.settings.serial_timeout
+        pwd = getattr(self.settings, "serial_password", "") or ""
+        # ENTER, password
+        preamble = "\r" + pwd
+        response = self._execute_once(preamble, timeout)
+        if "Main Menu" not in response:
+            raise RuntimeError("Login failed: 'Main Menu' not found in device response")
+
     def _reset_connection(self) -> None:
         if self._serial:
             try:
@@ -65,6 +79,8 @@ class SerialClient:
         with self.lock:
             timeout = timeout or self.settings.serial_timeout
             try:
+                # Ensure operator is logged in before running the action
+                self._perform_login(timeout)
                 return self._execute_once(input_sequence, timeout)
             except SerialTimeoutException as exc:
                 # Map pyserial timeout to TimeoutError for the worker to handle
@@ -72,4 +88,6 @@ class SerialClient:
             except (SerialException, OSError):
                 # Reconnect once and retry to satisfy resilience requirement
                 self._reset_connection()
+                # Attempt login again after reconnect
+                self._perform_login(timeout)
                 return self._execute_once(input_sequence, timeout)
