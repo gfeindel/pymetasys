@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel" style="max-width: 560px;">
+    <h2>Point</h2>
+    <form method="post">
+        <div style="margin-bottom: 12px;">
+            <label>Group</label><br />
+            <select name="group_id">
+                {% for g in groups %}
+                    <option value="{{ g.id }}" {% if form.group_id == g.id %}selected{% endif %}>{{ g.group_number }} - {{ g.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Point Number</label><br />
+            <input type="number" name="point_number" value="{{ form.point_number or '' }}" required />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Name</label><br />
+            <input type="text" name="name" value="{{ form.name or '' }}" required />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Point Type</label><br />
+            <input type="text" name="point_type" value="{{ form.point_type or '' }}" />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Unit</label><br />
+            <input type="text" name="unit" value="{{ form.unit or '' }}" />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Allowed Operations (comma-separated)</label><br />
+            <input type="text" name="allowed_operations" value="{{ form.allowed_operations | join(',') if form.allowed_operations else '' }}" />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Read Only</label>
+            <input type="checkbox" name="read_only" value="true" {% if form.read_only %}checked{% endif %} />
+        </div>
+        <input type="submit" value="Save" />
+    </form>
+</div>
+{% endblock %}

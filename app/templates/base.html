@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title if title else "CF Terminal" }}</title>
+    <style>
+        :root {
+            --bg: #f5f1e8;
+            --panel: #fff9f0;
+            --accent: #2f4858;
+            --accent-2: #d96c2c;
+            --muted: #6c6a63;
+            --border: #e2d8c5;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            color: var(--accent);
+            background: linear-gradient(135deg, #f5f1e8 0%, #f9f4ec 55%, #e8e0d1 100%);
+            min-height: 100vh;
+        }
+        header {
+            background: var(--accent);
+            color: #fff;
+            padding: 16px 24px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+            letter-spacing: 0.5px;
+        }
+        nav {
+            margin-top: 8px;
+        }
+        nav a, nav form button {
+            color: #fcefe0;
+            text-decoration: none;
+            margin-right: 16px;
+            font-size: 14px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        main {
+            padding: 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 10px 30px rgba(47, 72, 88, 0.08);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+        th {
+            color: var(--muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+        }
+        a.button, button, input[type="submit"] {
+            background: var(--accent-2);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        input, select {
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #fff;
+            font-size: 14px;
+        }
+        form.inline { display: inline; }
+        .muted { color: var(--muted); }
+        .grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        .notice {
+            padding: 10px 12px;
+            background: #fff2da;
+            border: 1px solid #e9c9a1;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            color: #7a4b1f;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CF Terminal Control</h1>
+        {% if user %}
+        <nav>
+            <a href="/groups">Groups</a>
+            {% if user.role == "ADMIN" %}
+                <a href="/admin/users">Users</a>
+                <a href="/admin/groups">Groups Admin</a>
+                <a href="/admin/points">Points</a>
+            {% endif %}
+            <form class="inline" action="/auth/logout" method="post">
+                <button type="submit">Logout</button>
+            </form>
+        </nav>
+        {% endif %}
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

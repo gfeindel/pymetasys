@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel" style="max-width: 520px;">
+    <h2>Group</h2>
+    <form method="post">
+        <div style="margin-bottom: 12px;">
+            <label>Group Number</label><br />
+            <input type="number" name="group_number" value="{{ form.group_number or '' }}" required />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Name</label><br />
+            <input type="text" name="name" value="{{ form.name or '' }}" required />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Description</label><br />
+            <input type="text" name="description" value="{{ form.description or '' }}" />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Building</label><br />
+            <input type="text" name="building" value="{{ form.building or '' }}" />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Floor</label><br />
+            <input type="text" name="floor" value="{{ form.floor or '' }}" />
+        </div>
+        <input type="submit" value="Save" />
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel">
+    <h2>Groups</h2>
+    {% if groups|length == 0 %}
+        <p class="muted">No groups configured yet.</p>
+    {% else %}
+    <table>
+        <thead>
+            <tr>
+                <th>Group Number</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group in groups %}
+            <tr>
+                <td>{{ group.group_number }}</td>
+                <td>{{ group.name }}</td>
+                <td>{{ group.description or "" }}</td>
+                <td><a class="button" href="/groups/{{ group.id }}">Open</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+{% endblock %}

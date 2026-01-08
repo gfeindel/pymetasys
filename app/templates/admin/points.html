@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel">
+    <h2>Points</h2>
+    <a class="button" href="/admin/points/new">New Point</a>
+    <table>
+        <thead>
+            <tr>
+                <th>Group</th>
+                <th>Point #</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Unit</th>
+                <th>Read Only</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in points %}
+            <tr>
+                <td>{{ p.group_id }}</td>
+                <td>{{ p.point_number }}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.point_type or '' }}</td>
+                <td>{{ p.unit or '' }}</td>
+                <td>{{ 'Yes' if p.read_only else 'No' }}</td>
+                <td>
+                    <a class="button" href="/admin/points/{{ p.id }}/edit">Edit</a>
+                    <form class="inline" method="post" action="/admin/points/{{ p.id }}/delete">
+                        <button type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

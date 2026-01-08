@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel" style="max-width: 520px;">
+    <h2>User</h2>
+    <form method="post">
+        <div style="margin-bottom: 12px;">
+            <label>Email</label><br />
+            <input type="text" name="email" value="{{ form.email or '' }}" required />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Role</label><br />
+            <select name="role">
+                <option value="ADMIN" {% if form.role == 'ADMIN' %}selected{% endif %}>ADMIN</option>
+                <option value="USER" {% if form.role == 'USER' or not form.role %}selected{% endif %}>USER</option>
+            </select>
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Password {% if form.id %}(leave blank to keep){% endif %}</label><br />
+            <input type="password" name="password" />
+        </div>
+        <input type="submit" value="Save" />
+    </form>
+</div>
+{% endblock %}

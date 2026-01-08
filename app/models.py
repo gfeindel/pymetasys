@@ -1,87 +1,72 @@
-import enum
 from datetime import datetime
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-)
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from app.database import Base
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.sqlite import JSON
+from sqlalchemy.orm import declarative_base, relationship
 
+Base = declarative_base()
 
-class UserRole(str, enum.Enum):
-    user = "user"
-    admin = "admin"
+ROLE_ADMIN = "ADMIN"
+ROLE_USER = "USER"
 
+JOB_PENDING = "PENDING"
+JOB_RUNNING = "RUNNING"
+JOB_SUCCEEDED = "SUCCEEDED"
+JOB_FAILED = "FAILED"
 
-class JobStatus(str, enum.Enum):
-    queued = "queued"
-    running = "running"
-    succeeded = "succeeded"
-    failed = "failed"
-    timeout = "timeout"
-
+JOB_READ_GROUP = "READ_GROUP"
+JOB_COMMAND_POINT = "COMMAND_POINT"
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.user, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(String(20), nullable=False, default=ROLE_USER)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
-    actions_created = relationship("ActionDefinition", back_populates="created_by")
-    jobs = relationship("ActionJob", back_populates="requested_by")
+    jobs = relationship("Job", back_populates="created_by")
 
+class Group(Base):
+    __tablename__ = "groups"
 
-class ActionDefinition(Base):
-    __tablename__ = "action_definitions"
+    id = Column(Integer, primary_key=True)
+    group_number = Column(Integer, unique=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    building = Column(String(255), nullable=True)
+    floor = Column(String(255), nullable=True)
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    input_sequence: Mapped[str] = mapped_column(Text, nullable=False)
-    result_regex: Mapped[str] = mapped_column(Text, nullable=False)
-    timeout_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    points = relationship("Point", back_populates="group", cascade="all, delete-orphan")
 
-    created_by = relationship("User", back_populates="actions_created")
-    jobs = relationship("ActionJob", back_populates="action_definition")
+class Point(Base):
+    __tablename__ = "points"
 
+    id = Column(Integer, primary_key=True)
+    point_number = Column(Integer, nullable=False)
+    name = Column(String(255), nullable=False)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
+    point_type = Column(String(50), nullable=True)
+    read_only = Column(Boolean, default=False)
+    allowed_operations = Column(JSON, nullable=True)
+    unit = Column(String(50), nullable=True)
+    last_value = Column(String(255), nullable=True)
+    last_updated_at = Column(DateTime, nullable=True)
 
-class ActionJob(Base):
-    __tablename__ = "action_jobs"
+    group = relationship("Group", back_populates="points")
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    action_definition_id: Mapped[int] = mapped_column(ForeignKey("action_definitions.id"), nullable=False)
-    requested_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    status: Mapped[JobStatus] = mapped_column(Enum(JobStatus), default=JobStatus.queued)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    raw_request_payload: Mapped[str | None] = mapped_column(Text, nullable=True)
-    raw_response: Mapped[str | None] = mapped_column(Text, nullable=True)
-    parsed_result: Mapped[str | None] = mapped_column(Text, nullable=True)
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+class Job(Base):
+    __tablename__ = "jobs"
 
-    action_definition = relationship("ActionDefinition", back_populates="jobs")
-    requested_by = relationship("User", back_populates="jobs")
+    id = Column(Integer, primary_key=True)
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(String(50), nullable=False)
+    payload_json = Column(JSON, nullable=False)
+    status = Column(String(20), nullable=False, default=JOB_PENDING)
+    result_json = Column(JSON, nullable=True)
+    error = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=True)
+    finished_at = Column(DateTime, nullable=True)
 
-    @property
-    def action_name(self) -> str | None:
-        return self.action_definition.name if self.action_definition else None
-
-    @property
-    def requested_by_email(self) -> str | None:
-        return self.requested_by.email if self.requested_by else None
+    created_by = relationship("User", back_populates="jobs")

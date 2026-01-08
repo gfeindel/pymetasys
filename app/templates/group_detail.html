@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel">
+    <h2>Group {{ group.group_number }} - {{ group.name }}</h2>
+    <p class="muted">{{ group.description or "" }}</p>
+    <form class="inline" method="post" action="/groups/{{ group.id }}/refresh">
+        <button type="submit">Refresh values</button>
+    </form>
+    {% if request.query_params.get("job_id") %}
+        <div class="notice">Job queued: {{ request.query_params.get("job_id") }}. Check status via <code>/jobs/{{ request.query_params.get("job_id") }}</code>.</div>
+    {% endif %}
+    <table>
+        <thead>
+            <tr>
+                <th>Point</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Value</th>
+                <th>Updated</th>
+                <th>Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for point in points %}
+            <tr>
+                <td>{{ point.point_number }}</td>
+                <td>{{ point.name }}</td>
+                <td>{{ point.point_type or "" }}</td>
+                <td>{{ point.last_value or "" }}</td>
+                <td>{{ point.last_updated_at or "" }}</td>
+                <td>
+                    {% if not point.read_only %}
+                    <form method="post" action="/points/{{ point.id }}/command">
+                        <input type="text" name="command_type" placeholder="Command" required style="width: 120px;" />
+                        <input type="text" name="command_value" placeholder="Value" required style="width: 120px;" />
+                        <input type="submit" value="Apply" />
+                    </form>
+                    {% else %}
+                        <span class="muted">Read only</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

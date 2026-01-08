@@ -1,35 +1,49 @@
-from functools import lru_cache
-from pydantic_settings import BaseSettings
-from pydantic import Field
+import os
 
+try:
+    from dotenv import load_dotenv
 
-class Settings(BaseSettings):
-    app_name: str = "Building Control API"
-    database_url: str = Field("sqlite:///./db.sqlite3", alias="DATABASE_URL")
-    redis_url: str | None = Field(None, alias="REDIS_URL")
+    load_dotenv()
+except Exception:
+    pass
+from dataclasses import dataclass
 
-    jwt_secret: str = Field("changeme", alias="JWT_SECRET")
-    jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
-    access_token_expire_minutes: int = Field(60 * 12, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+def _get_int(name, default):
+    value = os.getenv(name)
+    if value is None or value == "":
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
 
-    serial_port: str = Field("COM1", alias="SERIAL_PORT")
-    serial_baudrate: int = Field(9600, alias="SERIAL_BAUDRATE")
-    serial_timeout: float = Field(3.0, alias="SERIAL_TIMEOUT")
-    serial_password: str = Field("0000", alias="SERIAL_PASSWORD")
-    serial_xonxoff: bool = Field(False, alias="SERIAL_XONXOFF")
-    serial_rtscts: bool = Field(False, alias="SERIAL_RTSCTS")
-    serial_write_timeout: float | None = Field(None, alias="SERIAL_WRITE_TIMEOUT")
-    serial_exclusive: bool = Field(False, alias="SERIAL_EXCLUSIVE")
+def _get_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
-    admin_bootstrap_email: str | None = Field(None, alias="ADMIN_EMAIL")
-    admin_bootstrap_password: str | None = Field(None, alias="ADMIN_PASSWORD")
-    allow_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
+@dataclass
+class Settings:
+    app_secret_key: str = os.getenv("APP_SECRET_KEY", "change-me")
+    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    default_admin_username: str = os.getenv("DEFAULT_ADMIN_USERNAME", "admin")
+    default_admin_password: str = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin")
 
+    serial_port: str = os.getenv("SERIAL_PORT", "/dev/ttyUSB0")
+    serial_baud: int = _get_int("SERIAL_BAUD", 9600)
+    serial_timeout: float = float(os.getenv("SERIAL_TIMEOUT", "1.0"))
+    serial_write_timeout: float = float(os.getenv("SERIAL_WRITE_TIMEOUT", "1.0"))
+    serial_bytesize: int = _get_int("SERIAL_BYTESIZE", 8)
+    serial_parity: str = os.getenv("SERIAL_PARITY", "N")
+    serial_stopbits: int = _get_int("SERIAL_STOPBITS", 1)
 
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
+    log_level: str = os.getenv("LOG_LEVEL", "INFO")
+    log_file: str = os.getenv("LOG_FILE", "./app.log")
+    log_debug_screens: bool = _get_bool("LOG_DEBUG_SCREENS", False)
+
+    worker_poll_interval: float = float(os.getenv("WORKER_POLL_INTERVAL", "1.0"))
+    terminal_main_menu_hint: str = os.getenv("TERMINAL_MAIN_MENU_HINT", "Main Menu")
+
+settings = Settings()

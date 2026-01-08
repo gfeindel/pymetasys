@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel" style="max-width: 420px; margin: 40px auto;">
+    <h2>Sign in</h2>
+    {% if error %}
+        <div class="notice">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/auth/login">
+        <div style="margin-bottom: 12px;">
+            <label>Email</label><br />
+            <input type="text" name="email" required />
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label>Password</label><br />
+            <input type="password" name="password" required />
+        </div>
+        <input type="submit" value="Login" />
+    </form>
+</div>
+{% endblock %}
