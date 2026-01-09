@@ -1,6 +1,6 @@
-# CF Terminal Web App
+# Overview
 
-Small FastAPI app that queues terminal operations to a single RS-485 serial worker and provides a web UI for groups/points.
+Pymetasys is a small FastAPI app that provides a web interface to the Johnson Controls Metasys building control system. It translates user actions on the web to the equivalent sequence of characters for the terminal operations. Operations are queued and run over a single RS-485 serial worker. The app supports basic group and point operations.
 
 ## Requirements
 
