@@ -107,9 +107,18 @@ class TerminalDriver:
             self.send("\x1b")
             time.sleep(0.2)
             screen = self._read_for(1.0)
+            if settings.terminal_login_hint in screen:
+                screen = self._handle_login(screen)
             if settings.terminal_main_menu_hint in screen:
                 return screen
         return self._read_for(1.0)
+
+    def _handle_login(self, screen: str) -> str:
+        if not settings.terminal_login_password:
+            return screen
+        self.send(settings.terminal_login_password)
+        self.send("\r")
+        return self._read_for(2.0)
 
     def open_group_summary(self, group_number: int) -> str:
         self.go_to_main_menu()

@@ -42,6 +42,8 @@ Edit `.env`:
 - `SERIAL_BYTESIZE=8`
 - `SERIAL_PARITY=N`
 - `SERIAL_STOPBITS=1`
+- `TERMINAL_LOGIN_HINT=Password`
+- `TERMINAL_LOGIN_PASSWORD=1234`
 
 ## Troubleshooting
 

@@ -45,5 +45,7 @@ class Settings:
 
     worker_poll_interval: float = float(os.getenv("WORKER_POLL_INTERVAL", "1.0"))
     terminal_main_menu_hint: str = os.getenv("TERMINAL_MAIN_MENU_HINT", "Main Menu")
+    terminal_login_hint: str = os.getenv("TERMINAL_LOGIN_HINT", "Password")
+    terminal_login_password: str = os.getenv("TERMINAL_LOGIN_PASSWORD", "")
 
 settings = Settings()
