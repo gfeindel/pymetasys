@@ -31,13 +31,10 @@ class Settings:
     default_admin_username: str = os.getenv("DEFAULT_ADMIN_USERNAME", "admin")
     default_admin_password: str = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin")
 
-    serial_port: str = os.getenv("SERIAL_PORT", "/dev/ttyUSB0")
-    serial_baud: int = _get_int("SERIAL_BAUD", 9600)
-    serial_timeout: float = float(os.getenv("SERIAL_TIMEOUT", "1.0"))
-    serial_write_timeout: float = float(os.getenv("SERIAL_WRITE_TIMEOUT", "1.0"))
-    serial_bytesize: int = _get_int("SERIAL_BYTESIZE", 8)
-    serial_parity: str = os.getenv("SERIAL_PARITY", "N")
-    serial_stopbits: int = _get_int("SERIAL_STOPBITS", 1)
+    device_server_host: str = os.getenv("DEVICE_SERVER_HOST", "127.0.0.1")
+    device_server_port: int = _get_int("DEVICE_SERVER_PORT", 4001)
+    device_server_timeout: float = float(os.getenv("DEVICE_SERVER_TIMEOUT", "1.0"))
+    device_server_write_timeout: float = float(os.getenv("DEVICE_SERVER_WRITE_TIMEOUT", "1.0"))
 
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     log_file: str = os.getenv("LOG_FILE", "./app.log")

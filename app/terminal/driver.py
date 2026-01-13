@@ -1,12 +1,9 @@
 import re
+import socket
 import time
+import pyte
 from dataclasses import dataclass
 from typing import List, Optional
-
-try:
-    import serial
-except ImportError:  # pragma: no cover - optional at test time
-    serial = None
 
 from ..config import settings
 
@@ -21,78 +18,58 @@ class ScreenBuffer:
     def __init__(self, rows: int = 24, cols: int = 80):
         self.rows = rows
         self.cols = cols
-        self.clear()
+        self.screen = pyte.Screen(self.cols, self.rows)
+        self.stream = pyte.Stream(self.screen)
 
     def clear(self):
-        self.buffer = [" " * self.cols for _ in range(self.rows)]
-        self.row = 0
-        self.col = 0
+        self.screen.reset()
 
     def feed(self, data: bytes):
         text = data.decode("ascii", errors="ignore")
-        i = 0
-        while i < len(text):
-            ch = text[i]
-            if ch == "\x1b":
-                if text[i:i+4] == "\x1b[2J":
-                    self.clear()
-                    i += 4
-                    continue
-                i += 1
-                continue
-            if ch == "\r":
-                self.col = 0
-            elif ch == "\n":
-                self.row = min(self.rows - 1, self.row + 1)
-                self.col = 0
-            else:
-                if self.col >= self.cols:
-                    self.row = min(self.rows - 1, self.row + 1)
-                    self.col = 0
-                line = self.buffer[self.row]
-                self.buffer[self.row] = line[:self.col] + ch + line[self.col + 1 :]
-                self.col += 1
-            i += 1
+        self.stream.feed(text)
 
     def text(self) -> str:
-        return "\n".join(line.rstrip() for line in self.buffer)
+        return "\n".join(line.rstrip() for line in self.screen.display)
 
 class TerminalDriver:
     def __init__(self):
-        self.serial = None
+        self.sock = None
         self.screen = ScreenBuffer()
 
     def connect(self):
-        if serial is None:
-            raise RuntimeError("pyserial is not installed")
-        if self.serial and self.serial.is_open:
+        if self.sock:
             return
-        self.serial = serial.Serial(
-            port=settings.serial_port,
-            baudrate=settings.serial_baud,
-            timeout=settings.serial_timeout,
-            write_timeout=settings.serial_write_timeout,
-            bytesize=settings.serial_bytesize,
-            parity=settings.serial_parity,
-            stopbits=settings.serial_stopbits,
+        self.sock = socket.create_connection(
+            (settings.device_server_host, settings.device_server_port),
+            timeout=settings.device_server_timeout,
         )
+        self.sock.settimeout(settings.device_server_timeout)
 
     def close(self):
-        if self.serial and self.serial.is_open:
-            self.serial.close()
+        if self.sock:
+            self.sock.close()
+            self.sock = None
 
     def send(self, text: str):
-        if not self.serial:
-            raise RuntimeError("Serial port not open")
-        self.serial.write(text.encode("ascii"))
+        if not self.sock:
+            raise RuntimeError("Socket not open")
+        payload = text.encode("ascii")
+        self.sock.settimeout(settings.device_server_write_timeout)
+        try:
+            self.sock.sendall(payload)
+        finally:
+            self.sock.settimeout(settings.device_server_timeout)
 
     def _read_for(self, seconds: float = 1.0) -> str:
         start = time.time()
         last_data = time.time()
         while time.time() - start < seconds:
-            if not self.serial:
+            if not self.sock:
                 break
-            data = self.serial.read(1024)
+            try:
+                data = self.sock.recv(1024)
+            except socket.timeout:
+                data = b""
             if data:
                 self.screen.feed(data)
                 last_data = time.time()
