@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Groups — Metasys{% endblock %}
+{% block main %}
+<section x-data="groupsList()" x-init="load()">
+  <h1>Defined Groups</h1>
+  <p class="hint">Click a group to view its live summary. Values refresh every ~10 s.</p>
+
+  <div x-show="loading" class="loading">Loading groups…</div>
+  <div x-show="error" class="error" x-text="error"></div>
+
+  <ul class="groups">
+    <template x-for="g in groups" :key="g.number">
+      <li>
+        <a :href="`/groups/${g.number}`">
+          <span class="num" x-text="g.number"></span>
+          <span class="name" x-text="g.name"></span>
+        </a>
+      </li>
+    </template>
+  </ul>
+
+  <button class="refresh" @click="load()">Refresh</button>
+</section>
+
+<script>
+function groupsList() {
+  return {
+    groups: [], loading: false, error: '',
+    async load() {
+      this.loading = true; this.error = '';
+      try {
+        const r = await fetch('/api/groups');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        this.groups = await r.json();
+      } catch (e) { this.error = String(e); }
+      finally { this.loading = false; }
+    }
+  }
+}
+</script>
+{% endblock %}

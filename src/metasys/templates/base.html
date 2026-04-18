@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Metasys{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/">Groups</a>
+      {% if user and user.role == 'admin' %}
+        <a href="/terminal">Manual Terminal</a>
+      {% endif %}
+      <span class="spacer"></span>
+      {% if user %}
+        <span class="user">{{ user.username }} ({{ user.role }})</span>
+        <form method="post" action="/logout" style="display:inline">
+          <button type="submit" class="link">Log out</button>
+        </form>
+      {% endif %}
+    </nav>
+    <div id="status-bar" hx-get="/api/status/fragment" hx-trigger="load, every 3s" hx-swap="innerHTML"></div>
+  </header>
+  <main>
+    {% block main %}{% endblock %}
+  </main>
+</body>
+</html>

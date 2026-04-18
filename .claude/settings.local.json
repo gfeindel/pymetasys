@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pdftotext -layout -f 1 -l 20 CF-Terminal-User-Manual.pdf manual-p1-20.txt)",
+      "Bash(pdftotext -layout -f 20 -l 50 CF-Terminal-User-Manual.pdf manual-p20-50.txt)",
+      "Bash(pdftotext -layout -f 55 -l 95 C:/dev/metasys/CF-Terminal-User-Manual.pdf C:/dev/metasys/manual-p55-95.txt)",
+      "Bash(python -m pip install -e .[dev])",
+      "Bash(python -m pytest tests/ -x)",
+      "Bash(python -m pytest tests/)",
+      "Bash(python -c \"from metasys.app import app; print\\('routes:'\\); [print\\(f'  {r.methods if hasattr\\(r, \\\\\"methods\\\\\"\\) else \\\\\"WS\\\\\":20} {r.path}'\\) for r in app.routes]\")",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"from metasys import spike; print\\('spike OK'\\)\")",
+      "Bash(python -c \"from metasys.driver.driver import Driver, CommandRequest; print\\('driver OK'\\)\")",
+      "Bash(python -c \"from metasys.manual import ManualSessionManager; print\\('manual OK'\\)\")",
+      "Bash(python -c \"from metasys.poller import GroupPoller; print\\('poller OK'\\)\")",
+      "Bash(ruff check *)",
+      "Bash(taskkill //F //PID 1528 //PID 1526)",
+      "Bash(powershell -Command 'Get-Process python 2>$null | ForEach-Object { if \\($_.StartTime -lt \\(Get-Date\\).AddMinutes\\(-1\\)\\) { Write-Host \"Stopping PID $\\($_.Id\\)\"; Stop-Process -Id $_.Id -Force } }')",
+      "Bash(timeout 30 python -c ' *)",
+      "Bash(grep -v -E \"bridge:|bcrypt|^$\")"
+    ]
+  }
+}

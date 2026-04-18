@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Manual Terminal — Metasys{% endblock %}
+{% block main %}
+<section x-data="terminalPage()" x-init="start()">
+  <h1>Manual Terminal</h1>
+  <p class="hint warning">
+    Admin-only. Queue is paused while this session is open. Every keystroke is audit-logged.
+    Session auto-closes after 10 minutes.
+  </p>
+  <div id="term" class="term"></div>
+  <p>
+    Session: <strong x-text="status"></strong> —
+    <span x-text="remainingLabel"></span>
+    <button @click="extend()" x-show="active">Extend 2 min</button>
+    <button @click="close()" x-show="active">End session</button>
+  </p>
+
+  <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css">
+  <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
+</section>
+
+<script>
+function terminalPage() {
+  return {
+    term: null, ws: null, status: 'idle', active: false,
+    remaining: 0,
+    get remainingLabel() {
+      if (!this.active) return '';
+      const m = Math.floor(this.remaining / 60), s = Math.floor(this.remaining % 60);
+      return `${m}:${s.toString().padStart(2, '0')} remaining`;
+    },
+
+    start() {
+      this.term = new Terminal({cols: 80, rows: 24, convertEol: false, cursorBlink: true});
+      this.term.open(document.getElementById('term'));
+      this.status = 'connecting';
+      const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+      this.ws = new WebSocket(`${scheme}://${location.host}/ws/terminal`);
+      this.ws.binaryType = 'arraybuffer';
+      this.ws.onopen = () => { this.status = 'active'; this.active = true; };
+      this.ws.onmessage = (ev) => {
+        if (typeof ev.data === 'string') {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (msg.type === 'warn') alert('Session will end in ~2 minutes.');
+            if (msg.type === 'timeout') { this.status = 'timed out'; this.active = false; }
+            if (msg.type === 'error') alert(msg.message);
+          } catch {}
+        } else {
+          const u8 = new Uint8Array(ev.data);
+          this.term.write(u8);
+        }
+      };
+      this.ws.onclose = () => { this.status = 'closed'; this.active = false; };
+      this.term.onData((data) => {
+        if (this.ws && this.ws.readyState === 1) {
+          this.ws.send(new TextEncoder().encode(data));
+        }
+      });
+      // Poll remaining from /api/status.
+      setInterval(async () => {
+        try {
+          const r = await fetch('/api/status'); const j = await r.json();
+          this.remaining = j.manual_session ? j.manual_session.remaining : 0;
+        } catch {}
+      }, 2000);
+    },
+
+    extend() {
+      if (this.ws) this.ws.send(JSON.stringify({type: 'extend', seconds: 120}));
+    },
+
+    close() {
+      if (this.ws) this.ws.close();
+    }
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Group {{ group_number }} — Metasys{% endblock %}
+{% block main %}
+<section x-data="groupView({{ group_number }})" x-init="connect()">
+  <a href="/" class="back">← All groups</a>
+  <h1>Group <span x-text="groupNumber"></span> <small x-text="groupName"></small></h1>
+  <p class="hint">
+    Last update: <span x-text="lastUpdateLabel"></span> — values are at least 10 s stale.
+  </p>
+
+  <div x-show="error" class="error" x-text="error"></div>
+
+  <table class="points">
+    <thead>
+      <tr>
+        <th>#</th><th>Name</th><th>Value</th><th>Status</th><th>Flags</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <template x-for="p in points" :key="p.number">
+        <tr :class="{abnormal: p.abnormal, offline: p.offline, overridden: p.overridden, unack: p.unacknowledged}">
+          <td class="num" x-text="p.number"></td>
+          <td x-text="p.name"></td>
+          <td class="value" x-text="p.value"></td>
+          <td>
+            <span x-show="p.unacknowledged" title="unacknowledged">U</span>
+            <span x-show="p.status" x-text="p.status"></span>
+          </td>
+          <td><span x-text="p.flags.join(' ')"></span></td>
+          <td>
+            <button @click="startCommand(p)">Command</button>
+          </td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+
+  <div x-show="cmd" class="modal" @keydown.escape="cancelCommand()">
+    <div class="modal-body" x-show="cmd" x-cloak>
+      <h2>Command point <span x-text="cmd && cmd.point.number"></span>
+          <small x-text="cmd && cmd.point.name"></small></h2>
+      <p>Current value: <strong x-text="cmd && cmd.point.value"></strong></p>
+      <div x-show="cmd && cmd.loadingOptions">Fetching allowed commands…</div>
+      <template x-if="cmd && !cmd.loadingOptions">
+        <form @submit.prevent="submitCommand()">
+          <label>Type
+            <select x-model="cmd.commandType" required>
+              <template x-for="t in cmd.options.types"><option :value="t" x-text="t"></option></template>
+            </select>
+          </label>
+          <label x-show="cmd.commandType !== 'Release'">Value
+            <input x-model="cmd.value" :placeholder="cmd.options.default_value || 'value'"
+                   :required="cmd.commandType !== 'Release'">
+          </label>
+          <div class="modal-actions">
+            <button type="button" @click="cancelCommand()">Cancel</button>
+            <button type="submit" :disabled="cmd.submitting">Confirm &amp; send</button>
+          </div>
+          <p x-show="cmd.result" class="result" x-text="cmd.result"></p>
+          <p x-show="cmd.errorMsg" class="error" x-text="cmd.errorMsg"></p>
+        </form>
+      </template>
+    </div>
+  </div>
+</section>
+
+<script>
+function groupView(n) {
+  return {
+    groupNumber: n, groupName: '', points: [], error: '',
+    lastUpdate: null, cmd: null,
+    ws: null,
+
+    get lastUpdateLabel() {
+      return this.lastUpdate ? new Date(this.lastUpdate).toLocaleTimeString() : '—';
+    },
+
+    connect() {
+      const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+      this.ws = new WebSocket(`${scheme}://${location.host}/ws/groups/${n}`);
+      this.ws.onmessage = (ev) => {
+        const s = JSON.parse(ev.data);
+        this.groupName = s.group_name;
+        this.points = s.points;
+        this.lastUpdate = Date.now();
+      };
+      this.ws.onerror = () => { this.error = 'WebSocket error'; };
+      this.ws.onclose = () => { /* let it die; user can refresh */ };
+    },
+
+    async startCommand(point) {
+      this.cmd = {
+        point, options: null, loadingOptions: true,
+        commandType: '', value: '', submitting: false,
+        result: '', errorMsg: ''
+      };
+      try {
+        const r = await fetch(`/api/points/${point.number}/command-options`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        this.cmd.options = await r.json();
+        this.cmd.commandType = this.cmd.options.default_type || this.cmd.options.types[0] || '';
+        this.cmd.value = this.cmd.options.default_value || '';
+      } catch (e) {
+        this.cmd.errorMsg = String(e);
+      } finally {
+        this.cmd.loadingOptions = false;
+      }
+    },
+
+    cancelCommand() { this.cmd = null; },
+
+    async submitCommand() {
+      if (!this.cmd) return;
+      this.cmd.submitting = true; this.cmd.errorMsg = '';
+      try {
+        const body = new FormData();
+        body.append('command_type', this.cmd.commandType);
+        body.append('value', this.cmd.value || '');
+        body.append('confirm_before', this.cmd.point.value || '');
+        const r = await fetch(`/api/points/${this.cmd.point.number}/command`, {
+          method: 'POST', body
+        });
+        if (r.status === 409) {
+          const j = await r.json();
+          this.cmd.errorMsg = `Value changed since you opened this dialog: now "${j.detail.current}". Refusing to send.`;
+          return;
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        this.cmd.result = `Sent. Before: ${j.before ?? '—'}. After: ${j.after ?? '—'}. ${j.message || ''}`;
+      } catch (e) {
+        this.cmd.errorMsg = String(e);
+      } finally {
+        this.cmd.submitting = false;
+      }
+    }
+  }
+}
+</script>
+{% endblock %}
