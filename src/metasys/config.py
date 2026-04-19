@@ -22,9 +22,10 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Bridge
+    # Bridge — set bridge_pty_path to use a local PTY (e.g. via socat) instead of TCP.
     bridge_host: str = "127.0.0.1"
     bridge_port: int = 4001
+    bridge_pty_path: str = ""  # if non-empty, PtyBridge is used instead of Bridge
 
     # Device auth
     panel_password: str = ""

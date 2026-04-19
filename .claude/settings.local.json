@@ -17,7 +17,16 @@
       "Bash(taskkill //F //PID 1528 //PID 1526)",
       "Bash(powershell -Command 'Get-Process python 2>$null | ForEach-Object { if \\($_.StartTime -lt \\(Get-Date\\).AddMinutes\\(-1\\)\\) { Write-Host \"Stopping PID $\\($_.Id\\)\"; Stop-Process -Id $_.Id -Force } }')",
       "Bash(timeout 30 python -c ' *)",
-      "Bash(grep -v -E \"bridge:|bcrypt|^$\")"
+      "Bash(grep -v -E \"bridge:|bcrypt|^$\")",
+      "Read(//tmp/**)",
+      "Bash(systemctl status *)",
+      "Bash(systemctl list-units *)",
+      "Bash(python3 -c \"import pyte; print\\('pyte ok'\\)\")",
+      "Bash(timeout 3 bash -c 'echo >/dev/tcp/metasys.tbc.tbcnh.org/4001')",
+      "Bash(sudo apt-get *)",
+      "Bash(pdftotext /home/tbcit/pymetasys/CF-Terminal-User-Manual.pdf /tmp/cf-manual.txt)",
+      "Bash(pip install *)",
+      "Bash(python3 -)"
     ]
   }
 }

@@ -69,20 +69,21 @@ def is_main_menu(s: Screen) -> bool:
 
 
 def is_group_menu(s: Screen) -> bool:
-    # Group menu: Summary, Modify/Add/Delete, Graphics, Return to Main Menu.
-    # Distinguished from Main Menu by presence of "Modify/Add/Delete" and
-    # absence of "System Setup" / "Quit".
+    # Group menu: Summary, Modify/Add/Delete, Return to Main Menu.
+    # "Modify/Add/Delete" is unique to the Group Menu (Point Menu uses
+    # separate "Modify Point" / "Add Point" items).
     text = s.text()
     if "Modify/Add/Delete" not in text:
         return False
     if "Summary" not in text:
         return False
-    if "System Setup" in text or "Totalization" in text.split("\n", 1)[0]:
-        # Main Menu's leftmost column — if it's present, we're not in a
-        # submenu.
+    # Not a Group Summary (which has "Point To Command").
+    if "Point To Command" in text:
         return False
-    # Group vs. other submenus: Group has "Graphics" as a distinctive option.
-    return "Graphics" in text or ("Group" in text and "Return to Main Menu" in text and "Point" not in text.split("Return", 1)[0])
+    # Not on Main Menu (which has "System Setup").
+    if "System Setup" in text:
+        return False
+    return True
 
 
 def is_group_list(s: Screen) -> bool:

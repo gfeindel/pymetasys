@@ -158,36 +158,85 @@ class Driver:
         self._state = detect_state(self._screen)
         return self._state
 
-    async def _recover_to_main_menu(self, attempts: int = 8) -> None:
-        """ESC our way back to Main Menu. Also ack any blocking alarm first."""
-        for _ in range(attempts):
+    async def _recover_to_main_menu(self, attempts: int = 12) -> None:
+        """Navigate back to Main Menu from any known or unknown state."""
+        # Wait for the device to send its initial screen so detect_state has
+        # something to work with.
+        if not self._screen.text().strip():
+            log.debug("recovery: screen empty — sending ENTER to wake device")
+            await self._bridge.send(keys.ENTER)
+            await self._screen.wait_for(
+                lambda s: s.text().strip() != "", timeout=3.0
+            )
+            await asyncio.sleep(0.3)
+
+        for i in range(attempts):
             if self.alarms.is_blocked:
-                # Human is required — we can't recover. Surface this to caller.
                 raise DriverError(
                     "cannot recover to Main Menu while a human-ack alarm is up"
                 )
             current = self._detect()
+            cr, cc = self._screen.cursor()
+            log.debug(
+                "recovery attempt %d/%d: state=%s  cursor=(%d,%d)",
+                i + 1, attempts, current.name, cr, cc,
+            )
             if current is State.MAIN_MENU:
                 return
             if current is State.LOGIN_PROMPT:
                 await self._login()
                 continue
-            await self._bridge.send(keys.ESC)
-            await self._wait_settled(timeout=1.0)
-        raise DriverError("could not recover to Main Menu after %d ESC attempts" % attempts)
+            if current is State.UNKNOWN:
+                row, col = self._screen.cursor()
+                if col == 40:
+                    # Idle screen: cursor parks at col 40 after every render.
+                    # ENTER causes BEL+CR (cursor briefly hits col 0), then
+                    # the screen re-renders back to col 40. We must catch that
+                    # brief col-0 window and immediately send G.
+                    log.debug("recovery: UNKNOWN at col 40 — ENTER then wait col-0 then G")
+                    await self._bridge.send(keys.ENTER)
+                    await self._screen.wait_for(lambda s: s.cursor()[1] == 0, timeout=2.0)
+                    await self._bridge.send(keys.menu("G"))
+                elif col == 0:
+                    log.debug("recovery: UNKNOWN at col 0 — sending G")
+                    await self._bridge.send(keys.menu("G"))
+                else:
+                    log.debug("recovery: UNKNOWN at col %d — sending ESC", col)
+                    await self._bridge.send(keys.ESC)
+                await self._wait_settled(timeout=2.0)
+            else:
+                # On this device F1 (Cancel) is the universal back-navigation
+                # key. ESC does NOT exit most screens on the CF Terminal.
+                # The device has a two-phase response: an immediate acknowledgment
+                # followed by the screen transition ~200-400ms later. Use
+                # positive state-change detection instead of quiet-time so we
+                # don't declare "settled" before the transition completes.
+                log.debug("recovery: F1 from %s", current.name)
+                await self._bridge.send(keys.F1)
+                old_state = current
+                changed = await self._screen.wait_for(
+                    lambda s: detect_state(s) != old_state,
+                    timeout=2.0,
+                )
+                if changed:
+                    await asyncio.sleep(0.3)
+                else:
+                    await self._wait_settled(timeout=1.0)
+        raise DriverError("could not recover to Main Menu after %d attempts" % attempts)
 
     async def _login(self) -> None:
+        """Send the 4-digit password. The device auto-submits on the 4th character."""
         pw = self._settings.panel_password
         if not pw:
             raise DriverError("password prompt hit but METASYS_PANEL_PASSWORD is empty")
-        await self._bridge.send(keys.ENTER)
-        await asyncio.sleep(0.2)
         await self._bridge.send(keys.text(pw))
-        await self._bridge.send(keys.ENTER)
+        # Auto-submit: wait for dialog to clear AND cursor to leave row 11.
         await self._wait_settled(
-            expect=lambda: detect_state(self._screen) == State.MAIN_MENU,
-            timeout=5.0,
+            expect=lambda: "password" not in self._screen.text().lower()
+                           and self._screen.cursor()[0] != 11,
+            timeout=4.0,
         )
+        await asyncio.sleep(0.8)
 
     # ---- navigation ---------------------------------------------------
 
